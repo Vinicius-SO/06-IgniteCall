@@ -1,10 +1,22 @@
 import { Button, Heading, MultiStep, Text, TextInput } from "@ignite-ui/react";
 import { Header,Container } from "../styles";
-import { ArrowRight } from "phosphor-react";
-import { ConnectBox, ConnectItem } from "./styles";
+import { ArrowRight, Check } from "phosphor-react";
+import { AuthError, ConnectBox, ConnectItem } from "./styles";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/router";
 
 export default function connectCalendar (){
-    
+    const session = useSession()
+
+    const router = useRouter()
+
+    const hasAuthError = !!router.query.error
+    const isSignedId = session.status === 'authenticated'
+
+    async function handleConnectCalendar() {
+        await signIn('google')
+    }
+
     return(
        <Container>
             <Header>
@@ -20,9 +32,30 @@ export default function connectCalendar (){
             <ConnectBox>
                 <ConnectItem>
                     <Text>Google Calendar</Text>
-                    <Button variant={"secondary"} size="sm">Conectar</Button>
+                    {isSignedId ? (
+                        <Button size="sm" disabled>
+                        Conectado
+                        <Check />
+                        </Button>
+                    ) : (
+                        <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleConnectCalendar}
+                        >
+                        Conectar
+                        <ArrowRight />
+                        </Button>
+                    )}
                 </ConnectItem>
-                <Button type='submit' >
+                {hasAuthError && (
+                    <AuthError size="sm">
+                        Falha ao se conectar ao Google, verifique se você habilitou as
+                        permissões de acesso ao Google Calendar
+                    </AuthError>
+                )}
+
+                <Button type="submit" disabled={!isSignedId}>
                     Próximo passo
                     <ArrowRight/>
                 </Button>
