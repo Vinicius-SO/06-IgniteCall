@@ -43,6 +43,7 @@ export const TimePicker = styled('div', {
 })
 
 export const TimePickerHeader = styled(Text, {
+  textTransform: 'capitalize',
   fontWeight: '$medium',
 
   span: {
