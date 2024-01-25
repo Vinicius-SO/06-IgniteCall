@@ -38,6 +38,8 @@ export const TimePicker = styled('div', {
   bottom: 0,
   right: 0,
   width: 280,
+
+  
 })
 
 export const TimePickerHeader = styled(Text, {
