@@ -10,6 +10,9 @@ import {
 } from './styles'
 import { useMemo, useState } from 'react'
 import dayjs from 'dayjs'
+import { useRouter } from 'next/router'
+import { api } from '@/lib/axios'
+import { useQuery } from '@tanstack/react-query'
 
 interface CalendarWeek {
   week: number
@@ -21,6 +24,10 @@ interface CalendarWeek {
 
 type CalendarWeeks = CalendarWeek[]
 
+interface BlockedDates {
+  blockedWeekDays: number[]
+}
+
 interface CalendarProps{
   selectDate: Date | null
   onDateSelected: (date: Date) => void
@@ -28,6 +35,8 @@ interface CalendarProps{
 
 export function Calendar({onDateSelected,selectDate}:CalendarProps) {
 
+  const router = useRouter()
+  
   const [currentDate, setCurrentDate] = useState(() => {
     return dayjs().set('date', 1)
   })
@@ -49,6 +58,25 @@ export function Calendar({onDateSelected,selectDate}:CalendarProps) {
 
   const currentMonth = currentDate.format('MMMM')
   const currentYear = currentDate.format('YYYY')
+
+  const username = String(router.query.username)
+
+  const { data: blockedDates } = useQuery<BlockedDates>({
+    queryKey: ['blocked-dates', currentDate.get('year'), currentDate.get('month')],
+    queryFn: async () => {
+      const response = await api.get(`/users/${username}/blocked-dates`, {
+        params: {
+          year: currentDate.get('year'),
+          month: currentDate.get('month'),
+        },
+      })
+
+      return response.data
+    },
+
+  })
+
+
 
   const calendarWeeks = useMemo(()=>{
     
@@ -86,7 +114,11 @@ export function Calendar({onDateSelected,selectDate}:CalendarProps) {
         return { date, disabled: true }
       }),
       ...daysInMonthArray.map((date) => {
-        return { date, disabled: date.endOf('day').isBefore(new Date()) }
+        return { 
+          date,
+          disabled: !!(date.endOf('day').isBefore(new Date()) ||
+          blockedDates?.blockedWeekDays.includes(date.get('day'))),  
+        }
       }),
       ...nextMonthFillArray.map((date) => {
         return { date, disabled: true }
@@ -100,7 +132,7 @@ export function Calendar({onDateSelected,selectDate}:CalendarProps) {
         if (isNewWeek) {
           weeks.push({
             week: i / 7 + 1,
-            days: original.slice(i, i + 7),
+            days: original!.slice(i, i + 7),
           })
         }
 
@@ -111,7 +143,7 @@ export function Calendar({onDateSelected,selectDate}:CalendarProps) {
 
     return calendarWeeks
 
-  },[currentDate])
+  },[currentDate, blockedDates])
 
 
   return (
